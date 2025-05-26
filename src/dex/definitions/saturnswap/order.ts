@@ -1,15 +1,27 @@
+import { DefinitionField, DefinitionConstr } from '../../../types';
 import { DatumParameterKey } from '@app/constants';
 
 /**
- * SaturnSwap order datum definition
- * This defines the structure of swap order datums on-chain
- * TODO: Update this structure based on actual SaturnSwap order datum
+ * SaturnSwap Order Datum structure based on SwapDatum from the smart contract.
+ * This represents a limit order on SaturnSwap's order book DEX.
+ * 
+ * SwapDatum {
+ *   owner: Address,                    // Order owner
+ *   policy_id_sell: PolicyId,          // Token being sold
+ *   asset_name_sell: AssetName,        
+ *   amount_sell: Int,                  // Amount offered
+ *   policy_id_buy: PolicyId,           // Token wanted
+ *   asset_name_buy: AssetName,         
+ *   amount_buy: Int,                   // Amount wanted
+ *   valid_before_time: Option<Int>,    // Order expiry
+ *   output_reference: OutputReference  // UTXO reference
+ * }
  */
-export default {
+export const orderDefinition: DefinitionConstr = {
     constructor: 0,
     fields: [
         {
-            // Sender address
+            // Owner address (who placed the order)
             constructor: 0,
             fields: [
                 {
@@ -27,12 +39,7 @@ export default {
                             constructor: 0,
                             fields: [
                                 {
-                                    constructor: 0,
-                                    fields: [
-                                        {
-                                            bytes: DatumParameterKey.SenderStakingKeyHash
-                                        }
-                                    ]
+                                    bytes: DatumParameterKey.SenderStakingKeyHash
                                 }
                             ]
                         }
@@ -41,49 +48,49 @@ export default {
             ]
         },
         {
-            // Swap direction and minimum receive
-            constructor: 0,
-            fields: [
-                {
-                    constructor: DatumParameterKey.Action,
-                    fields: []
-                },
-                {
-                    int: DatumParameterKey.MinReceive
-                }
-            ]
+            // Token being sold - Policy ID
+            bytes: DatumParameterKey.TokenPolicyId
         },
         {
-            // Swap in token
-            constructor: 0,
-            fields: [
-                {
-                    bytes: DatumParameterKey.SwapInTokenPolicyId
-                },
-                {
-                    bytes: DatumParameterKey.SwapInTokenAssetName
-                }
-            ]
+            // Token being sold - Asset Name
+            bytes: DatumParameterKey.TokenAssetName
         },
         {
-            // Swap in amount
+            // Amount being sold
             int: DatumParameterKey.SwapInAmount
         },
         {
-            // Swap out token
+            // Token to buy - Policy ID
+            bytes: DatumParameterKey.SwapOutTokenPolicyId
+        },
+        {
+            // Token to buy - Asset Name
+            bytes: DatumParameterKey.SwapOutTokenAssetName
+        },
+        {
+            // Amount to buy
+            int: DatumParameterKey.MinReceive
+        },
+        {
+            // Valid before time (optional - None or Some(timestamp))
+            constructor: 0,
+            fields: [] // Will be either empty (None) or contain timestamp
+        },
+        {
+            // Output reference (txHash + index)
             constructor: 0,
             fields: [
                 {
-                    bytes: DatumParameterKey.SwapOutTokenPolicyId
+                    // Transaction hash
+                    bytes: DatumParameterKey.PoolIdentifier
                 },
                 {
-                    bytes: DatumParameterKey.SwapOutTokenAssetName
+                    // Output index
+                    int: DatumParameterKey.BatcherFee // Using as a placeholder for index
                 }
             ]
-        },
-        {
-            // Deposit fee (no batcher fee for Saturn)
-            int: DatumParameterKey.DepositFee
         }
     ]
-}; 
+};
+
+export default orderDefinition; 

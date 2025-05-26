@@ -9,6 +9,9 @@ import { appendSlash } from '@app/utils';
 /**
  * SaturnSwap API implementation
  * Provides methods to fetch liquidity pools and other data from SaturnSwap's GraphQL API
+ * 
+ * Note: SaturnSwap is a limit-order DEX, so "pools" here represent order book
+ * liquidity and trading pairs, not traditional AMM pools with x*y=k curves.
  */
 export class SaturnSwapApi extends BaseApi {
 
@@ -22,7 +25,7 @@ export class SaturnSwapApi extends BaseApi {
 
         this.api = axios.create({
             timeout: requestConfig.timeout,
-            // TODO: Update with actual SaturnSwap API endpoint
+            // SaturnSwap GraphQL API endpoint
             baseURL: `${appendSlash(requestConfig.proxyUrl)}https://api.saturnswap.com/graphql`,
             withCredentials: false,
         });
@@ -40,40 +43,49 @@ export class SaturnSwapApi extends BaseApi {
                 .then((pool: LiquidityPool | null) => pool ? [pool] : []);
         }
 
-        // TODO: Implement GraphQL query based on actual SaturnSwap API schema
-        // This is a placeholder implementation
+        // Based on SaturnSwap API documentation, use getPools query
         return this.api.post('', {
-            operationName: 'GetPools',
             query: `
-                query GetPools($asset: String) {
-                    pools(asset: $asset) {
-                        id
-                        assetA {
-                            policyId
-                            assetName
-                            decimals
+                query GetPools($first: Int, $where: PoolFilterInput) {
+                    getPools(first: $first, where: $where) {
+                        nodes {
+                            id
+                            name
+                            ticker
+                            lp_fee_percent
+                            token_project_one {
+                                ticker
+                                policy_id
+                                asset_name
+                                decimals
+                            }
+                            token_project_two {
+                                ticker
+                                policy_id
+                                asset_name
+                                decimals
+                            }
+                            pool_stats {
+                                liquidity_ada
+                                volume_24h_ada
+                                price_one
+                                price_two
+                            }
                         }
-                        assetB {
-                            policyId
-                            assetName
-                            decimals
-                        }
-                        reserveA
-                        reserveB
-                        lpToken {
-                            policyId
-                            assetName
-                        }
-                        totalLpSupply
-                        poolFee
                     }
                 }
             `,
             variables: {
-                asset: assetA ? (assetA === 'lovelace' ? 'lovelace' : assetA.identifier()) : undefined,
+                first: 100,
+                where: assetA ? {
+                    or: [
+                        { token_project_one: { policy_id: { eq: assetA === 'lovelace' ? '' : (assetA as Asset).policyId } } },
+                        { token_project_two: { policy_id: { eq: assetA === 'lovelace' ? '' : (assetA as Asset).policyId } } }
+                    ]
+                } : undefined,
             },
         }).then((response: any) => {
-            const pools = response.data?.data?.pools || [];
+            const pools = response.data?.data?.getPools?.nodes || [];
             return pools.map((pool: any) => this.liquidityPoolFromResponse(pool));
         }).catch((error: any) => {
             console.error('Error fetching SaturnSwap pools:', error);
@@ -85,40 +97,49 @@ export class SaturnSwapApi extends BaseApi {
      * Fetch a specific pool by asset pair
      */
     private poolByPair(assetA: Token, assetB: Token): Promise<LiquidityPool | null> {
-        // TODO: Implement based on actual SaturnSwap API
+        // Use getPoolByTokens as shown in API docs
         return this.api.post('', {
-            operationName: 'GetPoolByPair',
             query: `
-                query GetPoolByPair($assetA: String!, $assetB: String!) {
-                    poolByPair(assetA: $assetA, assetB: $assetB) {
+                query GetPoolByTokens($policyIdOne: String, $assetNameOne: String, $policyIdTwo: String, $assetNameTwo: String) {
+                    getPoolByTokens(
+                        policyIdOne: $policyIdOne,
+                        assetNameOne: $assetNameOne,
+                        policyIdTwo: $policyIdTwo,
+                        assetNameTwo: $assetNameTwo
+                    ) {
                         id
-                        assetA {
-                            policyId
-                            assetName
+                        name
+                        ticker
+                        lp_fee_percent
+                        token_project_one {
+                            ticker
+                            policy_id
+                            asset_name
                             decimals
                         }
-                        assetB {
-                            policyId
-                            assetName
+                        token_project_two {
+                            ticker
+                            policy_id
+                            asset_name
                             decimals
                         }
-                        reserveA
-                        reserveB
-                        lpToken {
-                            policyId
-                            assetName
+                        pool_stats {
+                            liquidity_ada
+                            volume_24h_ada
+                            price_one
+                            price_two
                         }
-                        totalLpSupply
-                        poolFee
                     }
                 }
             `,
             variables: {
-                assetA: assetA === 'lovelace' ? 'lovelace' : assetA.identifier(),
-                assetB: assetB === 'lovelace' ? 'lovelace' : assetB.identifier(),
+                policyIdOne: assetA === 'lovelace' ? '' : (assetA as Asset).policyId,
+                assetNameOne: assetA === 'lovelace' ? '' : (assetA as Asset).assetName,
+                policyIdTwo: assetB === 'lovelace' ? '' : (assetB as Asset).policyId,
+                assetNameTwo: assetB === 'lovelace' ? '' : (assetB as Asset).assetName,
             },
         }).then((response: any) => {
-            const pool = response.data?.data?.poolByPair;
+            const pool = response.data?.data?.getPoolByTokens;
             return pool ? this.liquidityPoolFromResponse(pool) : null;
         }).catch((error: any) => {
             console.error('Error fetching SaturnSwap pool by pair:', error);
@@ -130,25 +151,40 @@ export class SaturnSwapApi extends BaseApi {
      * Convert API response to LiquidityPool model
      */
     private liquidityPoolFromResponse(poolData: any): LiquidityPool {
+        // Extract token information
+        const tokenA = poolData.token_project_one.policy_id !== ''
+            ? new Asset(poolData.token_project_one.policy_id, poolData.token_project_one.asset_name, poolData.token_project_one.decimals ?? 0)
+            : 'lovelace';
+        const tokenB = poolData.token_project_two.policy_id !== ''
+            ? new Asset(poolData.token_project_two.policy_id, poolData.token_project_two.asset_name, poolData.token_project_two.decimals ?? 0)
+            : 'lovelace';
+
+        // Calculate reserves based on liquidity and prices
+        // This is a simplified calculation - actual implementation may need refinement
+        const liquidityAda = BigInt(poolData.pool_stats?.liquidity_ada || 0);
+        const priceOne = poolData.pool_stats?.price_one || 1;
+        const priceTwo = poolData.pool_stats?.price_two || 1;
+        
+        const reserveA = tokenA === 'lovelace' ? liquidityAda / 2n : BigInt(Math.floor(Number(liquidityAda) / 2 / priceOne));
+        const reserveB = tokenB === 'lovelace' ? liquidityAda / 2n : BigInt(Math.floor(Number(liquidityAda) / 2 / priceTwo));
+
         const liquidityPool: LiquidityPool = new LiquidityPool(
             SaturnSwap.identifier,
-            poolData.assetA.policyId !== ''
-                ? new Asset(poolData.assetA.policyId, poolData.assetA.assetName, poolData.assetA.decimals ?? 0)
-                : 'lovelace',
-            poolData.assetB.policyId !== ''
-                ? new Asset(poolData.assetB.policyId, poolData.assetB.assetName, poolData.assetB.decimals ?? 0)
-                : 'lovelace',
-            BigInt(poolData.reserveA),
-            BigInt(poolData.reserveB),
-            this.dex.poolAddress, // Saturn uses direct pool address
+            tokenA,
+            tokenB,
+            reserveA,
+            reserveB,
+            this.dex.poolAddress,
             this.dex.orderAddress,
-            this.dex.orderAddress, // Same address for market/limit orders
+            this.dex.orderAddress,
         );
 
-        liquidityPool.lpToken = new Asset(poolData.lpToken.policyId, poolData.lpToken.assetName);
-        liquidityPool.totalLpTokens = BigInt(poolData.totalLpSupply);
-        liquidityPool.poolFeePercent = poolData.poolFee || 0.3;
-        liquidityPool.identifier = poolData.id || liquidityPool.lpToken.identifier();
+        // Set additional properties
+        liquidityPool.poolFeePercent = poolData.lp_fee_percent || 0.3;
+        liquidityPool.identifier = poolData.id;
+        
+        // SaturnSwap uses dynamic LP token policies, so we can't set a generic lpToken here
+        // Each liquidity provider has their own policy
 
         return liquidityPool;
     }
