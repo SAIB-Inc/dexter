@@ -23,6 +23,7 @@ import { BaseApi } from '@dex/api/base-api';
 import { SaturnSwapApi } from './api/saturnswap-api';
 import { BaseWalletProvider } from '@providers/wallet/base-wallet-provider';
 import { decodeControlDatum, decodeSwapDatum } from './definitions/saturnswap/decode';
+import { Script } from 'lucid-cardano';
 
 /**
  * Converting Script Hashes to Addresses:
@@ -108,7 +109,7 @@ export class SaturnSwap extends BaseDex {
     public readonly orderAddress: string = this.MAIN_ADDRESS;
     public readonly poolValidityAsset: string = ''; // Not used in SaturnSwap
     public readonly cancelDatum: string = 'd87a8100'; // CancelAction(0) from plutus.json
-    public readonly orderScript: { type: string; script: string } = {
+    public readonly orderScript: Script = {
         type: 'PlutusV2',
         script: this.ORDER_SCRIPT_HASH, // TODO: Replace with full CBOR when available
     };

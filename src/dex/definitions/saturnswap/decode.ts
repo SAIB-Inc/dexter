@@ -16,7 +16,7 @@ import { Data } from 'lucid-cardano';
  */
 export function decodeSwapDatum(datumCbor: string): any {
     try {
-        const datum = Data.from(datumCbor);
+        const datum = Data.from(datumCbor) as any;
         
         // SwapDatum is a constructor with index 0
         if (datum.index !== 0) {
@@ -87,7 +87,7 @@ export function decodeSwapDatum(datumCbor: string): any {
  */
 export function decodeControlDatum(datumCbor: string): any {
     try {
-        const datum = Data.from(datumCbor);
+        const datum = Data.from(datumCbor) as any;
         
         // ControlDatum is constructor index 2 in LiquidityDatum
         if (datum.index !== 2) {
@@ -128,7 +128,7 @@ export function decodeControlDatum(datumCbor: string): any {
  */
 export function isSwapDatum(datumCbor: string): boolean {
     try {
-        const datum = Data.from(datumCbor);
+        const datum = Data.from(datumCbor) as any;
         return datum.index === 0 && datum.fields?.length === 9;
     } catch {
         return false;
@@ -140,7 +140,7 @@ export function isSwapDatum(datumCbor: string): boolean {
  */
 export function isControlDatum(datumCbor: string): boolean {
     try {
-        const datum = Data.from(datumCbor);
+        const datum = Data.from(datumCbor) as any;
         return datum.index === 2 && datum.fields?.length === 11;
     } catch {
         return false;
