@@ -27,12 +27,12 @@
 
 ##### NPM
 ```
-npm i @indigo-labs/dexter
+npm i @saibdev/dexter
 ```
 
 ##### Yarn
 ```
-yarn add @indigo-labs/dexter
+yarn add @saibdev/dexter
 ```
 
 ### Quick Start

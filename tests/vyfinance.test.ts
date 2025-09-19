@@ -67,7 +67,7 @@ describe('VyFinance', () => {
                     expect(() => { vyfi.buildSwapOrder(liquidityPool, defaultSwapParameters); }).not.toThrowError();
                     expect(payments[0].addressType).toBe(AddressType.Contract);
                     expect(payments[0].assetBalances[0].quantity).toBe(100_003_900000n);
-                    expect(payments[0].datum).toBe('d8799f44ed56bac6d87c9f1b000000017a830584ffff');
+                    expect(payments[0].datum).toBe('d8798244ed56bac6d87c811b000000017a830584');
                 });
         });
 
