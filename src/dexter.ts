@@ -20,6 +20,7 @@ import { SundaeSwapV3 } from '@dex/sundaeswap-v3';
 import { MinswapV2 } from '@dex/minswap-v2';
 import { WingRidersV2 } from '@dex/wingriders-v2';
 import { Splash } from '@dex/splash';
+import { SaturnSwap } from '@dex/saturnswap';
 
 export class Dexter {
 
@@ -68,6 +69,7 @@ export class Dexter {
             [WingRidersV2.identifier]: new WingRidersV2(this.requestConfig),
             [VyFinance.identifier]: new VyFinance(this.requestConfig),
             [Splash.identifier]: new Splash(this.requestConfig),
+            [SaturnSwap.identifier]: new SaturnSwap(this.requestConfig),
         };
     }
 
