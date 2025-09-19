@@ -46,6 +46,10 @@ export class DexTransaction {
         });
     }
 
+    public toCbor(): string {
+        return this.providerData.tx.toCBOR();
+    }
+
     public attachMetadata(key: number, json: Object): DexTransaction {
         return this._walletProvider.attachMetadata(this, key, json);
     }

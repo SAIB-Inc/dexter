@@ -17,8 +17,8 @@ import { AddressType, DatumParameterKey } from '@app/constants';
 import { BaseApi } from '@dex/api/base-api';
 import pool from '@dex/definitions/splash/pool';
 import order from '@dex/definitions/splash/order';
-import { bytesToHex, correspondingReserves, hexToBytes, lucidUtils, tokensMatch } from '@app/utils';
-import { AddressDetails, Script } from 'lucid-cardano';
+import { bytesToHex, correspondingReserves, hexToBytes, tokensMatch } from '@app/utils';
+import { AddressDetails, credentialToAddress, getAddressDetails, Script } from 'lucid-cardano';
 import { Uint64BE } from 'int64-buffer';
 import blake2b from 'blake2b';
 import { SplashApi } from '@dex/api/splash-api';
@@ -234,7 +234,8 @@ export class Splash extends BaseDex {
 
         return [
             this.buildSwapOrderPayment(swapParameters, {
-                address: lucidUtils.credentialToAddress(
+                address: credentialToAddress(
+                    "Mainnet",
                     {
                         type: 'Script',
                         hash: this.orderScriptHash,
@@ -260,7 +261,11 @@ export class Splash extends BaseDex {
 
     public async buildCancelSwapOrder(txOutputs: UTxO[], returnAddress: string): Promise<PayToAddress[]> {
         const relevantUtxo: UTxO | undefined = txOutputs.find((utxo: UTxO) => {
-            const addressDetails: AddressDetails | undefined = lucidUtils.getAddressDetails(utxo.address);
+            const addressDetails: AddressDetails | undefined = getAddressDetails(utxo.address);
+            
+            if (!addressDetails) {
+                return false;
+            }
 
             return (addressDetails.paymentCredential?.hash ?? '') === this.orderScriptHash;
         });

@@ -32,7 +32,7 @@
     "int64-buffer": "^1.0.1",
     "js-encoding-utils": "^0.7.3",
     "lodash": "^4.17.21",
-    "lucid-cardano": "^0.10.11"
+    "lucid-cardano": "npm:@lucid-evolution/lucid@^0.4.29"
   },
   "devDependencies": {
     "@babel/core": "^7.21.4",

@@ -274,6 +274,39 @@ export class SwapRequest {
         return swapTransaction;
     }
 
+    public async complete(): Promise<DexTransaction> {
+        if (! this._dexter.walletProvider) {
+            throw new Error('Wallet provider must be set before submitting a swap order.');
+        }
+        if (! this._dexter.walletProvider.isWalletLoaded) {
+            throw new Error('Wallet must be loaded before submitting a swap order.');
+        }
+
+        const swapTransaction: DexTransaction = this._dexter.walletProvider.createTransaction();
+
+        if (! this._dexter.config.shouldSubmitOrders) {
+            return swapTransaction;
+        }
+
+        const paymentsToAddresses = await this.getPaymentsToAddresses();
+
+        return await this.completeSwapOrder(swapTransaction, paymentsToAddresses);
+    }
+
+    private async completeSwapOrder(swapTransaction: DexTransaction, payToAddresses: PayToAddress[]) {
+        swapTransaction.status = TransactionStatus.Building;
+
+        const swapInTokenName: string = this._swapInToken === 'lovelace' ? 'ADA' : this._swapInToken.assetName;
+        const swapOutTokenName: string = this._swapOutToken === 'lovelace' ? 'ADA' : this._swapOutToken.assetName;
+        swapTransaction.attachMetadata(MetadataKey.Message, {
+            msg: [
+                this._metadata !== '' ? this._metadata : `[${this._dexter.config.metadataMsgBranding}] ${this._liquidityPool.dex} ${swapInTokenName} -> ${swapOutTokenName} Swap`
+            ]
+        });
+
+        return await swapTransaction.payToAddresses(payToAddresses);
+    }
+
     private sendSwapOrder(swapTransaction: DexTransaction, payToAddresses: PayToAddress[]) {
         swapTransaction.status = TransactionStatus.Building;
 
