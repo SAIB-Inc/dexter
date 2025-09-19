@@ -53,5 +53,6 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --access public
 
-      - name: Publish to JSR
-        run: bunx jsr publish
+      # Temporarily skip JSR publishing until import specifiers are Deno-compatible
+      #- name: Publish to JSR
+      #  run: bunx jsr publish
