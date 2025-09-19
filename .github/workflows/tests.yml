@@ -6,10 +6,15 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Test using Node.js
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v1
         with:
-          node-version: '18'
-      - run: npm ci
-      - run: npm run test
+          bun-version: '1.2.22'
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run tests
+        run: bun test
