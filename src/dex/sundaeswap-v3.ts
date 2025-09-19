@@ -4,12 +4,12 @@ import { Asset, Token } from './models/asset';
 import { BaseDex } from './base-dex';
 import { AssetBalance, DatumParameters, DefinitionConstr, DefinitionField, PayToAddress, RequestConfig, SpendUTxO, SwapFee, UTxO } from '@app/types';
 import { DefinitionBuilder } from '@app/definition-builder';
-import { correspondingReserves, lucidUtils, tokensMatch } from '@app/utils';
+import { correspondingReserves, tokensMatch } from '@app/utils';
 import { AddressType, DatumParameterKey } from '@app/constants';
 import pool from '@dex/definitions/sundaeswap-v3/pool';
 import order from '@dex/definitions/sundaeswap-v3/order';
 import { BaseApi } from '@dex/api/base-api';
-import { AddressDetails, Script } from 'lucid-cardano';
+import { AddressDetails, credentialToAddress, getAddressDetails, Script } from 'lucid-cardano';
 import { SundaeSwapV3Api } from '@dex/api/sundaeswap-v3-api';
 import { BaseWalletProvider } from '@providers/wallet/base-wallet-provider';
 
@@ -165,7 +165,8 @@ export class SundaeSwapV3 extends BaseDex {
 
         return [
             this.buildSwapOrderPayment(swapParameters, {
-                address: lucidUtils.credentialToAddress(
+                address: credentialToAddress(
+                    "Mainnet",
                     {
                         type: 'Script',
                         hash: this.orderScriptHash,
@@ -191,7 +192,11 @@ export class SundaeSwapV3 extends BaseDex {
 
     public async buildCancelSwapOrder(txOutputs: UTxO[], returnAddress: string): Promise<PayToAddress[]> {
         const relevantUtxo: UTxO | undefined = txOutputs.find((utxo: UTxO) => {
-            const addressDetails: AddressDetails | undefined = lucidUtils.getAddressDetails(utxo.address);
+            const addressDetails: AddressDetails | undefined = getAddressDetails(utxo.address);
+
+            if (!addressDetails) {
+                return false;
+            }
 
             return (addressDetails.paymentCredential?.hash ?? '') === this.orderScriptHash;
         });
