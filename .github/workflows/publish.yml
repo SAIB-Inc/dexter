@@ -38,7 +38,7 @@ jobs:
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          cat <<'EOF' > ~/.npmrc
+          cat <<EOF > ~/.npmrc
           //registry.npmjs.org/:_authToken=${NPM_TOKEN}
           always-auth=true
           EOF
