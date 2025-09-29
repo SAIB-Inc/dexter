@@ -230,7 +230,7 @@ export class MinswapV2 extends BaseDex {
                         },
                     ],
                     datum: datumBuilder.getCbor(),
-                    isInlineDatum: false,
+                    isInlineDatum: true,
                     spendUtxos: spendUtxos,
                 }
             )
