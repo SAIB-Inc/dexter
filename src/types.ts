@@ -172,3 +172,9 @@ export type DatumJson = {
   fields?: Array<DatumJson>;
   [constructor: string]: unknown;
 };
+
+export type ChainedTransactionResult = {
+  newWalletUtxos: UTxO[];
+  derivedOutputs: UTxO[];
+  transaction: any;
+};

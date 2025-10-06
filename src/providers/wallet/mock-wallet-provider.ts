@@ -1,4 +1,4 @@
-import { Cip30Api, PayToAddress, WalletOptions } from '@app/types';
+import { Cip30Api, PayToAddress, UTxO, WalletOptions } from '@app/types';
 import { DexTransaction } from '@dex/models/dex-transaction';
 import { BaseWalletProvider } from './base-wallet-provider';
 
@@ -60,6 +60,10 @@ export class MockWalletProvider extends BaseWalletProvider {
 
     public submitTransaction(transaction: DexTransaction): Promise<string> {
         return Promise.resolve('hashtest');
+    }
+
+    public overrideWalletUtxos(utxos: UTxO[]): void {
+        // Mock implementation - no-op for testing
     }
 
 }
