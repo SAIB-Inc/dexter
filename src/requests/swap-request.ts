@@ -2,7 +2,7 @@ import { LiquidityPool } from '@dex/models/liquidity-pool';
 import { Token } from '@dex/models/asset';
 import { Dexter } from '@app/dexter';
 import { tokensMatch } from '@app/utils';
-import { DatumParameters, PayToAddress, SpendUTxO, SwapFee, UTxO } from '@app/types';
+import { ChainedTransactionResult, DatumParameters, PayToAddress, SpendUTxO, SwapFee, UTxO } from '@app/types';
 import { DatumParameterKey, MetadataKey, TransactionStatus } from '@app/constants';
 import { DexTransaction } from '@dex/models/dex-transaction';
 
@@ -291,6 +291,40 @@ export class SwapRequest {
         const paymentsToAddresses = await this.getPaymentsToAddresses();
 
         return await this.completeSwapOrder(swapTransaction, paymentsToAddresses);
+    }
+
+    public async buildChain(): Promise<ChainedTransactionResult> {
+        if (! this._dexter.walletProvider) {
+            throw new Error('Wallet provider must be set before building chained transaction.');
+        }
+        if (! this._dexter.walletProvider.isWalletLoaded) {
+            throw new Error('Wallet must be loaded before building chained transaction.');
+        }
+        if (! this._liquidityPool) {
+            throw new Error('Liquidity pool must be set before building chained transaction.');
+        }
+        if (! this._swapInToken) {
+            throw new Error('Swap in token must be set before building chained transaction.');
+        }
+        if (this._swapInAmount <= 0n) {
+            throw new Error('Swap in amount must be set before building chained transaction.');
+        }
+
+        const swapTransaction: DexTransaction = this._dexter.walletProvider.createTransaction();
+        swapTransaction.useChaining = true;
+
+        const payToAddresses = await this.getPaymentsToAddresses();
+        await swapTransaction.payToAddresses(payToAddresses);
+
+        if (! swapTransaction.chainData) {
+            throw new Error('Chain data not populated after transaction build.');
+        }
+
+        return {
+            newWalletUtxos: swapTransaction.chainData.newWalletUTxOs,
+            derivedOutputs: swapTransaction.chainData.derivedOutputs,
+            transaction: swapTransaction
+        };
     }
 
     private async completeSwapOrder(swapTransaction: DexTransaction, payToAddresses: PayToAddress[]) {

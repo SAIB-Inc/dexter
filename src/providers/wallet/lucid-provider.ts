@@ -5,6 +5,7 @@ import {
     KupmiosConfig,
     PayToAddress,
     SpendUTxO,
+    UTxO,
     WalletOptions
 } from '@app/types';
 import { DexTransaction } from '@dex/models/dex-transaction';
@@ -154,12 +155,20 @@ export class LucidProvider extends BaseWalletProvider {
         });
 
 
-        return transaction.providerData.tx.complete()
-            .then((tx: TxSignBuilder) => {
-                transaction.providerData.tx = tx;
+        if (transaction.useChaining) {
+            const [newWalletUTxOs, derivedOutputs, txSignBuilder] =
+                await transaction.providerData.tx.chain();
+            transaction.chainData = { newWalletUTxOs, derivedOutputs };
+            transaction.providerData.tx = txSignBuilder;
+            return transaction;
+        } else {
+            return transaction.providerData.tx.complete()
+                .then((tx: TxSignBuilder) => {
+                    transaction.providerData.tx = tx;
 
-                return transaction;
-            });
+                    return transaction;
+                });
+        }
     }
 
     public signTransaction(transaction: DexTransaction): Promise<DexTransaction> {
@@ -180,6 +189,18 @@ export class LucidProvider extends BaseWalletProvider {
             .then((txHash: TxHash) => {
                 return txHash;
             });
+    }
+
+    public overrideWalletUtxos(utxos: UTxO[]): void {
+        const lucidUtxos = utxos.map(utxo => ({
+            txHash: utxo.txHash,
+            outputIndex: utxo.outputIndex,
+            address: utxo.address,
+            datumHash: utxo.datumHash,
+            datum: utxo.datum,
+            assets: this.paymentFromAssets(utxo.assetBalances),
+        }));
+        this._api.overrideUTxOs(lucidUtxos);
     }
 
     private paymentFromAssets(assetBalances: AssetBalance[]): Assets {

@@ -1,4 +1,4 @@
-import { Cip30Api, PayToAddress, WalletOptions } from '@app/types';
+import { Cip30Api, PayToAddress, UTxO, WalletOptions } from '@app/types';
 import { DexTransaction } from '@dex/models/dex-transaction';
 
 export abstract class BaseWalletProvider {
@@ -24,5 +24,7 @@ export abstract class BaseWalletProvider {
     abstract signTransaction(transaction: DexTransaction): Promise<DexTransaction>;
 
     abstract submitTransaction(transaction: DexTransaction): Promise<string>;
+
+    abstract overrideWalletUtxos(utxos: UTxO[]): void;
 
 }

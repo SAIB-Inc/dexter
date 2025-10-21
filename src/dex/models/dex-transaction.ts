@@ -1,6 +1,6 @@
 import { TransactionStatus } from '@app/constants';
 import { BaseWalletProvider } from '@providers/wallet/base-wallet-provider';
-import { DexTransactionError, PayToAddress } from '@app/types';
+import { DexTransactionError, PayToAddress, UTxO } from '@app/types';
 
 interface TransactionCallback {
     (transaction: DexTransaction): void;
@@ -10,6 +10,8 @@ export class DexTransaction {
 
     public providerData: any = {};
     public error: DexTransactionError | undefined = undefined;
+    public useChaining: boolean = false;
+    public chainData?: { newWalletUTxOs: UTxO[], derivedOutputs: UTxO[] };
 
     private _hash: string;
     private _isSigned: boolean = false;
