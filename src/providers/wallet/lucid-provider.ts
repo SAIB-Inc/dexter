@@ -176,7 +176,7 @@ export class LucidProvider extends BaseWalletProvider {
             throw new Error('Must load wallet before signing transaction.');
         }
 
-        return transaction.providerData.tx.sign().complete()
+        return transaction.providerData.tx.sign.withWallet().complete()
             .then((signedTx: TxSigned) => {
                 transaction.providerData.tx = signedTx;
 
